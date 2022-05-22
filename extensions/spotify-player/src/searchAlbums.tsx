@@ -1,8 +1,7 @@
 import { Action, ActionPanel, Image, List, showToast, Toast } from "@raycast/api";
-import { useEffect, useState } from "react";
-import { PlayAction } from "./client/actions";
-import { authorize, spotifyApi } from "./client/client";
-import { Response } from "./client/interfaces";
+import { useState } from "react";
+import { PlayAction } from "./actions";
+import { useAlbumSearch } from "./client/client";
 
 export default function SpotifyList() {
   const [searchText, setSearchText] = useState<string>();
@@ -63,55 +62,4 @@ function AlbumItem(props: { album: SpotifyApi.AlbumObjectSimplified }) {
       }
     />
   );
-}
-
-function useAlbumSearch(query: string | undefined): Response<SpotifyApi.AlbumSearchResponse> {
-  const [response, setResponse] = useState<Response<SpotifyApi.AlbumSearchResponse>>({ isLoading: false });
-
-  let cancel = false;
-
-  useEffect(() => {
-    authorize();
-
-    async function fetchData() {
-      if (cancel) {
-        return;
-      }
-      if (!query) {
-        setResponse((oldState) => ({ ...oldState, isLoading: false, result: undefined }));
-        return;
-      }
-      setResponse((oldState) => ({ ...oldState, isLoading: true }));
-
-      try {
-        const response =
-          (await spotifyApi
-            .searchAlbums(query, { limit: 50 })
-            .then((response: { body: any }) => response.body as SpotifyApi.AlbumSearchResponse)
-            .catch((error) => {
-              setResponse((oldState) => ({ ...oldState, error: error.toString() }));
-            })) ?? undefined;
-
-        if (!cancel) {
-          setResponse((oldState) => ({ ...oldState, result: response }));
-        }
-      } catch (e: any) {
-        if (!cancel) {
-          setResponse((oldState) => ({ ...oldState, error: e.toString() }));
-        }
-      } finally {
-        if (!cancel) {
-          setResponse((oldState) => ({ ...oldState, isLoading: false }));
-        }
-      }
-    }
-
-    fetchData();
-
-    return () => {
-      cancel = true;
-    };
-  }, [query]);
-
-  return response;
 }
